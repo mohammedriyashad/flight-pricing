@@ -1,4 +1,4 @@
-# Flight Simulator — Milestone 1 (Simple & Complete)
+# Flight Simulator — Milestone 1
 
 ## What is included
 - SQLite schema & seed: db/db_schema.sql
