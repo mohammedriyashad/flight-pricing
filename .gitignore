@@ -3,7 +3,10 @@
 venv/
 
 # Python cache
-_pycache_/
+_pycache/
+**/pycache_/
+*.pyc
+
 
 # SQLite DB (do not upload)
 db/flight_simulator.db

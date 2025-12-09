@@ -4,12 +4,14 @@ from pydantic import BaseModel, Field, constr
 from typing import Optional, List
 import sqlite3, os, random
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathlib import Path as PathlibPath
+from .pricing_engine import calculate_dynamic_price
+from .simulator import run_simulator_loop
 
 APP = FastAPI(title="Flight Simulator - Milestone 1 (simple)")
 
-BASE_DIR = Path(__file__).resolve().parents[1]  # milestone1/
-DB_FILE = BASE_DIR / "db" / "flight_simulator.db"
+BASE_DIR = PathlibPath(__file__).resolve().parents[1]  # milestone1/
+DB_FILE = (BASE_DIR / "db" / "flight_simulator.db").resolve()
 
 # ---------- Pydantic models ----------
 class FlightOut(BaseModel):
@@ -63,6 +65,23 @@ def row_to_flight(row):
     dep = datetime.strptime(row["departure_time"], "%Y-%m-%d %H:%M:%S")
     arr = datetime.strptime(row["arrival_time"], "%Y-%m-%d %H:%M:%S")
     dur = int((arr - dep).total_seconds() // 60)
+
+    # compute dynamic price using pricing_engine
+    # note: if your DB has a 'demand_level' column use it; else default to 'medium'
+    demand_level = row["demand_level"] if "demand_level" in row.keys() else "medium"
+
+    try:
+        dyn_price = calculate_dynamic_price(
+            base_fare=row["price"],
+            available_seats=row["available_seats"], # type: ignore
+            total_seats=row["total_seats"],
+            departure_iso=row["departure_time"],
+            demand_level=demand_level,
+            now=datetime.utcnow()
+        ) # type: ignore
+    except Exception:
+        dyn_price = float(row["price"] or 0.0)
+
     return FlightOut(
         flight_id=row["flight_id"],
         flight_number=row["flight_number"],
@@ -76,9 +95,8 @@ def row_to_flight(row):
         duration_min=dur,
         total_seats=row["total_seats"],
         available_seats=row["available_seats"],
-        price=float(row["price"])
+        price=dyn_price
     )
-
 # ---------- Endpoints ----------
 @APP.get("/flights/", response_model=List[FlightOut])
 def list_flights():
@@ -245,7 +263,16 @@ def book(b: BookIn):
             conn.execute("ROLLBACK")
             raise HTTPException(status_code=400, detail="not enough seats available (concurrent)")
 
-        total = float(flight2["price"]) * b.seats
+        # compute dynamic price for booking
+        dyn_price = calculate_dynamic_price(
+            base_fare=flight2["price"],
+            seats_left=flight2["available_seats"],
+            total_seats=flight2["available_seats"] + b.seats,  # simple safe fallback
+            departure_iso=conn.execute("SELECT departure_time FROM flight WHERE flight_id = ?", (b.flight_id,)).fetchone()[0],
+            demand_level="medium"
+)
+
+        total = float(dyn_price) * b.seats
         cur = conn.execute("""
             INSERT INTO bookings (user_id, flight_id, seats_booked, status, total_amount)
             VALUES (?, ?, ?, 'booked', ?)
@@ -294,3 +321,12 @@ def get_booking(booking_id: int):
         booking_date=rec["booking_date"],
         status=rec["status"]
     )
+# --- start simulator on app startup ---
+@APP.on_event("startup")
+def startup_simulator():
+    # Start simulator thread with 15s interval. It runs as daemon so it won't block server.
+    try:
+        run_simulator_loop(interval_seconds=15)
+        print("Simulator started (background thread).")
+    except Exception as e:
+        print("Failed to start simulator:", e)
