@@ -1,11 +1,18 @@
-# milestone1/db/reset_price.py  (create & run)
-import sqlite3, pathlib
-p = pathlib.Path("milestone1/db/flight_simulator.db").resolve()
-conn = sqlite3.connect(str(p))
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent / "flight_simulator.db"
+
+conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
-flight_id = 1        # <- change this to the flight_id you want to fix
-new_base_price = 3000.0  # <- change to a sensible base fare
-cur.execute("UPDATE flight SET price = ? WHERE flight_id = ?", (new_base_price, flight_id))
+
+# Reset ONLY base_price
+cur.execute("""
+UPDATE flight
+SET base_price = 3000
+""")
+
 conn.commit()
 conn.close()
-print("Reset flight", flight_id, "price ->", new_base_price)
+
+print("Base price reset successfully")

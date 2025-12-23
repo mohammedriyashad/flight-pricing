@@ -66,21 +66,16 @@ def row_to_flight(row):
     arr = datetime.strptime(row["arrival_time"], "%Y-%m-%d %H:%M:%S")
     dur = int((arr - dep).total_seconds() // 60)
 
-    # compute dynamic price using pricing_engine
-    # note: if your DB has a 'demand_level' column use it; else default to 'medium'
     demand_level = row["demand_level"] if "demand_level" in row.keys() else "medium"
 
-    try:
-        dyn_price = calculate_dynamic_price(
-            base_fare=row["price"],
-            available_seats=row["available_seats"], # type: ignore
-            total_seats=row["total_seats"],
-            departure_iso=row["departure_time"],
-            demand_level=demand_level,
-            now=datetime.utcnow()
-        ) # type: ignore
-    except Exception:
-        dyn_price = float(row["price"] or 0.0)
+    dyn_price = calculate_dynamic_price(
+        base_fare=row["base_price"],           # ✅ FIX
+        seats_left=row["available_seats"],     # ✅ FIX
+        total_seats=row["total_seats"],
+        departure_iso=row["departure_time"],
+        demand_level=demand_level,
+        now=datetime.utcnow()
+    )
 
     return FlightOut(
         flight_id=row["flight_id"],
@@ -95,7 +90,7 @@ def row_to_flight(row):
         duration_min=dur,
         total_seats=row["total_seats"],
         available_seats=row["available_seats"],
-        price=dyn_price
+        price=float(dyn_price)                 # ✅ runtime only
     )
 # ---------- Endpoints ----------
 @APP.get("/flights/", response_model=List[FlightOut])
@@ -105,7 +100,7 @@ def list_flights():
         SELECT f.flight_id, f.flight_number, f.airline,
                a1.code AS origin_code, a1.city AS origin_city,
                a2.code AS dest_code, a2.city AS dest_city,
-               f.departure_time, f.arrival_time, f.total_seats, f.available_seats, f.price
+               f.departure_time, f.arrival_time, f.total_seats, f.available_seats, f.base_price
         FROM flight f
         JOIN airports a1 ON f.origin_airport = a1.airport_id
         JOIN airports a2 ON f.destination_airport = a2.airport_id
@@ -142,7 +137,7 @@ def search_flights(
         SELECT f.flight_id, f.flight_number, f.airline,
                a1.code AS origin_code, a1.city AS origin_city,
                a2.code AS dest_code, a2.city AS dest_city,
-               f.departure_time, f.arrival_time, f.total_seats, f.available_seats, f.price
+               f.departure_time, f.arrival_time, f.total_seats, f.available_seats, f.base_price
         FROM flight f
         JOIN airports a1 ON f.origin_airport = a1.airport_id
         JOIN airports a2 ON f.destination_airport = a2.airport_id
@@ -234,74 +229,177 @@ def simulate_feed(payload: Optional[FeedIn] = None):
 @APP.post("/book/", response_model=BookingOut)
 def book(b: BookIn):
     """
-    Atomic booking:
-    - validate user exists by email
-    - check available seats
-    - begin immediate transaction to lock DB for update
-    - insert booking, update available_seats, commit
+    Milestone 3 – Atomic booking with:
+    - concurrency safety
+    - dynamic pricing
+    - PNR generation
     """
-    conn = get_conn()
-    try:
-        # find user
-        user = conn.execute("SELECT id FROM users WHERE email = ?", (b.user_email.lower(),)).fetchone()
-        if not user:
-            raise HTTPException(status_code=400, detail="user not found (use registered email)")
 
-        # check flight exists
-        flight = conn.execute("SELECT flight_id, available_seats, price FROM flight WHERE flight_id = ?", (b.flight_id,)).fetchone()
+    conn = get_conn()
+
+    try:
+        # ---------- 1. Validate user ----------
+        user = conn.execute(
+            "SELECT id FROM users WHERE email = ?",
+            (b.user_email.lower(),)
+        ).fetchone()
+
+        if not user:
+            raise HTTPException(status_code=400, detail="User not found")
+
+        # ---------- 2. Begin transaction (LOCK DB) ----------
+        conn.execute("BEGIN IMMEDIATE")
+
+        # ---------- 3. Fetch flight (LOCKED) ----------
+        flight = conn.execute("""
+            SELECT flight_id, departure_time,
+                   total_seats, available_seats,
+                   base_price
+            FROM flight
+            WHERE flight_id = ?
+        """, (b.flight_id,)).fetchone()
+
         if not flight:
-            raise HTTPException(status_code=400, detail="flight not found")
+            conn.execute("ROLLBACK")
+            raise HTTPException(status_code=400, detail="Flight not found")
 
         if flight["available_seats"] < b.seats:
-            raise HTTPException(status_code=400, detail="not enough seats available")
-
-        # Begin immediate transaction to prevent race conditions (exclusive lock for writes)
-        conn.execute("BEGIN IMMEDIATE")
-        # re-check inside tx
-        flight2 = conn.execute("SELECT available_seats, price FROM flight WHERE flight_id = ?", (b.flight_id,)).fetchone()
-        if flight2["available_seats"] < b.seats:
             conn.execute("ROLLBACK")
-            raise HTTPException(status_code=400, detail="not enough seats available (concurrent)")
+            raise HTTPException(status_code=400, detail="Not enough seats")
 
-        # compute dynamic price for booking
+        # ---------- 4. Calculate SAFE dynamic price ----------
         dyn_price = calculate_dynamic_price(
-            base_fare=flight2["price"],
-            seats_left=flight2["available_seats"],
-            total_seats=flight2["available_seats"] + b.seats,  # simple safe fallback
-            departure_iso=conn.execute("SELECT departure_time FROM flight WHERE flight_id = ?", (b.flight_id,)).fetchone()[0],
+            base_fare=flight["base_price"],
+            seats_left=flight["available_seats"],
+            total_seats=flight["total_seats"],
+            departure_iso=flight["departure_time"],
             demand_level="medium"
-)
+        )
 
-        total = float(dyn_price) * b.seats
-        cur = conn.execute("""
-            INSERT INTO bookings (user_id, flight_id, seats_booked, status, total_amount)
-            VALUES (?, ?, ?, 'booked', ?)
-        """, (user["id"], b.flight_id, b.seats, total))
-        # update seats
+        total_amount = float(dyn_price) * b.seats
+
+        # ---------- 5. Generate PNR ----------
+        pnr = f"PNR{random.randint(100000,999999)}"
+
+        # ---------- 6. Insert booking ----------
         conn.execute("""
-            UPDATE flight SET available_seats = available_seats - ? WHERE flight_id = ?
+            INSERT INTO bookings (
+                pnr, user_id, flight_id,
+                seats_booked, status, total_amount
+            )
+            VALUES (?, ?, ?, ?, 'booked', ?)
+        """, (
+            pnr,
+            user["id"],
+            b.flight_id,
+            b.seats,
+            total_amount
+        ))
+
+        # ---------- 7. Update seat count ----------
+        conn.execute("""
+            UPDATE flight
+            SET available_seats = available_seats - ?
+            WHERE flight_id = ?
         """, (b.seats, b.flight_id))
-        # commit
+
+        # ---------- 8. Commit transaction ----------
         conn.commit()
-        booking_id = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
-        rec = conn.execute("SELECT booking_id, user_id, flight_id, seats_booked, total_amount, booking_date, status FROM bookings WHERE booking_id = ?", (booking_id,)).fetchone()
+
+        # ---------- 9. Fetch booking ----------
+        rec = conn.execute("""
+            SELECT booking_id, pnr, user_id,
+                   flight_id, seats_booked,
+                   total_amount, booking_date, status
+            FROM bookings
+            WHERE pnr = ?
+        """, (pnr,)).fetchone()
+
         return BookingOut(
             booking_id=rec["booking_id"],
             user_id=rec["user_id"],
             flight_id=rec["flight_id"],
             seats_booked=rec["seats_booked"],
-            total_amount=float(rec["total_amount"] or 0.0),
+            total_amount=float(rec["total_amount"]),
             booking_date=rec["booking_date"],
             status=rec["status"]
         )
+
     except HTTPException:
         raise
+
     except Exception as e:
         try:
             conn.execute("ROLLBACK")
         except:
             pass
-        raise HTTPException(status_code=500, detail=f"internal error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        conn.close()
+
+@APP.post("/book/cancel/{booking_id}")
+def cancel_booking(booking_id: int):
+    """
+    Milestone 3 – Booking cancellation
+    - restore seats
+    - mark booking cancelled
+    - transaction safe
+    """
+
+    conn = get_conn()
+
+    try:
+        # ---------- 1. Start transaction ----------
+        conn.execute("BEGIN IMMEDIATE")
+
+        # ---------- 2. Fetch booking ----------
+        booking = conn.execute("""
+            SELECT booking_id, flight_id, seats_booked, status
+            FROM bookings
+            WHERE booking_id = ?
+        """, (booking_id,)).fetchone()
+
+        if not booking:
+            conn.execute("ROLLBACK")
+            raise HTTPException(status_code=404, detail="Booking not found")
+
+        if booking["status"] == "cancelled":
+            conn.execute("ROLLBACK")
+            raise HTTPException(status_code=400, detail="Booking already cancelled")
+
+        # ---------- 3. Restore seats ----------
+        conn.execute("""
+            UPDATE flight
+            SET available_seats = available_seats + ?
+            WHERE flight_id = ?
+        """, (booking["seats_booked"], booking["flight_id"]))
+
+        # ---------- 4. Update booking status ----------
+        conn.execute("""
+            UPDATE bookings
+            SET status = 'cancelled'
+            WHERE booking_id = ?
+        """, (booking_id,))
+
+        # ---------- 5. Commit ----------
+        conn.commit()
+
+        return {
+            "message": "Booking cancelled successfully",
+            "booking_id": booking_id
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        try:
+            conn.execute("ROLLBACK")
+        except:
+            pass
+        raise HTTPException(status_code=500, detail=str(e))
+
     finally:
         conn.close()
 
@@ -321,6 +419,53 @@ def get_booking(booking_id: int):
         booking_date=rec["booking_date"],
         status=rec["status"]
     )
+
+@APP.get("/bookings/history/{user_email}", response_model=List[BookingOut])
+def booking_history(user_email: str):
+    """
+    Milestone 3 – Booking history retrieval
+    Returns all bookings (active + cancelled) for a user
+    """
+
+    conn = get_conn()
+
+    try:
+        # ---------- 1. Get user ----------
+        user = conn.execute(
+            "SELECT id FROM users WHERE email = ?",
+            (user_email.lower(),)
+        ).fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # ---------- 2. Fetch bookings ----------
+        rows = conn.execute("""
+            SELECT booking_id, user_id, flight_id,
+                   seats_booked, total_amount,
+                   booking_date, status
+            FROM bookings
+            WHERE user_id = ?
+            ORDER BY booking_date DESC
+        """, (user["id"],)).fetchall()
+
+        # ---------- 3. Convert to response ----------
+        return [
+            BookingOut(
+                booking_id=r["booking_id"],
+                user_id=r["user_id"],
+                flight_id=r["flight_id"],
+                seats_booked=r["seats_booked"],
+                total_amount=float(r["total_amount"] or 0.0),
+                booking_date=r["booking_date"],
+                status=r["status"]
+            )
+            for r in rows
+        ]
+
+    finally:
+        conn.close()
+        
 # --- start simulator on app startup ---
 @APP.on_event("startup")
 def startup_simulator():
@@ -330,3 +475,7 @@ def startup_simulator():
         print("Simulator started (background thread).")
     except Exception as e:
         print("Failed to start simulator:", e)
+from .bookings import router as bookings_router
+APP.include_router(bookings_router)
+def generate_pnr():
+    return "PNR" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
