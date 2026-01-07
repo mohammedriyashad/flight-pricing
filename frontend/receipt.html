@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SkyBook | E-Ticket</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo">SkyBook ✈</div>
+  <div class="nav-links">
+    <a href="index.html">Flights</a>
+    <a href="history.html">My Bookings</a>
+  </div>
+</div>
+
+<div class="receipt-wrapper">
+  <div class="receipt-card">
+    <h2>✈ SkyBook E-Ticket</h2>
+
+    <!-- THIS IS WHERE JS WILL INJECT DATA -->
+    <div id="receiptDetails"></div>
+
+    <div class="receipt-actions">
+      <a href="index.html" class="confirm-btn">Book Another Flight</a>
+      <button class="confirm-btn" onclick="window.print()">
+        Download Receipt (PDF)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/receipt.js"></script>
+</body>
+</html>

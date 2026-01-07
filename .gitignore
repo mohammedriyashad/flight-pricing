@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+**/pycache_/
+*.pyc
+
+
+# SQLite DB (do not upload)
+db/flight_simulator.db
+*.db
+
+# VSCode settings
+.vscode/
