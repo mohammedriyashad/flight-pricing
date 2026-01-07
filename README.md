@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ✈️ SkyBook – Flight Booking Simulator
 
 SkyBook is a full-stack **Flight Booking Simulator Web Application** that allows users to search flights, book tickets, generate e-tickets, view booking history, and provides role-based access for admins.  
