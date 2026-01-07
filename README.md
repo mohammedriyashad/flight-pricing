@@ -7,8 +7,8 @@ The project is built to simulate a real-world airline booking workflow using mod
 
 ## 🚀 Live Demo
 - **Frontend:** https://<your-netlify-url>.netlify.app  
-- **Backend API:** https://<your-render-url>.onrender.com  
-- **API Docs (Swagger):** https://<your-render-url>.onrender.com/docs  
+- **Backend API: https://skybook-backend-v04m.onrender.com
+- **API Docs (Swagger): https://skybook-backend-v04m.onrender.com/docs
 
 ---
 
