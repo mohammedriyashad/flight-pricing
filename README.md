@@ -32,52 +32,40 @@ The project is built to simulate a real-world airline booking workflow using mod
 
 ## 🏗️ Project Architecture
 
-SkyBook/
-│
+flight_pricing/
 ├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── flights.py
-│   │   │   ├── bookings.py
-│   │   │   ├── users.py
-│   │   │   └── admin.py
-│   │   │
-│   │   ├── core/
-│   │   │   └── config.py
-│   │   │
-│   │   ├── db/
-│   │   │   ├── database.py
-│   │   │   └── flight_simulator.db
-│   │   │
-│   │   └── main.py
-│   │
-│   ├── requirements.txt
-│   
+│   ├── __pycache__/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── app.py
+│   │   └── pricing_engine.py
+│   ├── db/
+│   │   ├── db_schema.sql
+│   │   └── flight_simulator.db
+│   ├── tools/
+│   │   ├── create_db_run.py
+│   │   └── __init__.py
+│   ├── __init__.py
+│   ├── render.yaml
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── assets/
 │   │   ├── css/
-│   │   │   └── main.css
 │   │   └── js/
-│   │       ├── api.js
-│   │       ├── auth.js
-│   │       ├── search.js
-│   │       ├── bookings.js
-│   │       ├── receipt.js
-│   │       └── history.js
-│   │
-│   ├── pages/
-│   │   ├── index.html
-│   │   ├── login.html
-│   │   ├── booking.html
-│   │   ├── receipt.html
-│   │   └── history.html
-│   │
-│   └── _redirects
+│   ├── admin.html
+│   ├── booking.html
+│   ├── history.html
+│   ├── index.html
+│   ├── login.html
+│   ├── receipt.html
+│   └── signup.html
 │
+├── Documentation/
 ├── .gitignore
 ├── LICENSE
-└── README.md   
+└── README.md
 
 
 ---
