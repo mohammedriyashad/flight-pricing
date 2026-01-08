@@ -32,28 +32,47 @@ The project is built to simulate a real-world airline booking workflow using mod
 
 ## 🏗️ Project Architecture
 
-flight_pricing/
+---
+
+# 🔥 EASIER & SAFER METHOD (100% Clean)
+
+If you want **absolute control** (recommended for final README):
+
+### 👉 Just COPY this (already verified from your project)
+
+```bash
+FLIGHT_PRICING/
 ├── backend/
-│   ├── __pycache__/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── admin.py
 │   │   ├── app.py
 │   │   └── pricing_engine.py
+│   │
 │   ├── db/
 │   │   ├── db_schema.sql
 │   │   └── flight_simulator.db
+│   │
 │   ├── tools/
 │   │   ├── create_db_run.py
 │   │   └── __init__.py
-│   ├── __init__.py
-│   ├── render.yaml
+│   │
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── assets/
 │   │   ├── css/
+│   │   │   └── main.css
 │   │   └── js/
+│   │       ├── admin.js
+│   │       ├── api.js
+│   │       ├── auth.js
+│   │       ├── bookings.js
+│   │       ├── config.js
+│   │       ├── history.js
+│   │       ├── receipt.js
+│   │       └── search.js
+│   │
 │   ├── admin.html
 │   ├── booking.html
 │   ├── history.html
@@ -62,11 +81,9 @@ flight_pricing/
 │   ├── receipt.html
 │   └── signup.html
 │
-├── Documentation/
 ├── .gitignore
 ├── LICENSE
 └── README.md
-
 
 ---
 
