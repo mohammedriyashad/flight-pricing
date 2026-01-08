@@ -14,3 +14,6 @@ db/flight_simulator.db
 
 # VSCode settings
 .vscode/
+
+!Documentation/
+!Documentation/**
