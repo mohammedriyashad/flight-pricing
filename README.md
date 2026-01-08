@@ -34,6 +34,9 @@ The project is built to simulate a real-world airline booking workflow using mod
 
 ---
 
+---
+
+
 FLIGHT_PRICING/
 ├── backend/
 │   ├── api/
@@ -77,7 +80,6 @@ FLIGHT_PRICING/
 ├── .gitignore
 ├── LICENSE
 └── README.md
-
 ---
 
 ## 🧪 Technology Stack
