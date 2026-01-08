@@ -37,6 +37,9 @@ The project is built to simulate a real-world airline booking workflow using mod
 ---
 
 
+###  Clean Project structure
+
+```bash
 FLIGHT_PRICING/
 ├── backend/
 │   ├── api/
