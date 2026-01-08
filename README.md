@@ -33,14 +33,6 @@ The project is built to simulate a real-world airline booking workflow using mod
 ## 🏗️ Project Architecture
 
 ---
-
-# 🔥 EASIER & SAFER METHOD (100% Clean)
-
-If you want **absolute control** (recommended for final README):
-
-### 👉 Just COPY this (already verified from your project)
-
-```bash
 FLIGHT_PRICING/
 ├── backend/
 │   ├── api/
