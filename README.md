@@ -33,6 +33,7 @@ The project is built to simulate a real-world airline booking workflow using mod
 ## 🏗️ Project Architecture
 
 ---
+
 FLIGHT_PRICING/
 ├── backend/
 │   ├── api/
