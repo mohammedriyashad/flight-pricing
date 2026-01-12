@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Passenger Details</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen flex justify-center items-center">
+
+<div class="bg-card w-full max-w-xl p-8 rounded-xl shadow-xl">
+
+  <h1 class="text-2xl font-bold mb-6 text-neon">Passenger Details</h1>
+
+  <!-- INPUTS -->
+  <div class="space-y-4">
+    <input id="fullName"
+      placeholder="Full name (as per Govt ID)"
+      class="w-full px-4 py-3 rounded bg-bg border border-gray-600"/>
+
+    <div class="flex gap-4">
+      <input id="age" type="number" placeholder="Age"
+        class="w-1/2 px-4 py-3 rounded bg-bg border border-gray-600"/>
+
+      <select id="gender"
+        class="w-1/2 px-4 py-3 rounded bg-bg border border-gray-600">
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <button onclick="addPassenger()"
+      class="bg-gray-700 px-4 py-2 rounded">
+      + Add Passenger
+    </button>
+  </div>
+
+  <!-- PASSENGER LIST -->
+  <div id="passengerList" class="mt-6 space-y-2"></div>
+
+  <!-- CONTINUE -->
+  <button onclick="proceedToPayment()"
+    class="mt-6 w-full bg-neon text-black py-3 rounded font-bold">
+    Proceed to Payment
+  </button>
+
+</div>
+
+<script src="assets/js/passenger.js"></script>
+</body>
+</html>

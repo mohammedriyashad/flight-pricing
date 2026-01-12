@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Select Seat</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF",
+            seat: "#1E293B",
+            selected: "#00E5FF",
+            window: "#38BDF8"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen">
+
+<!-- HEADER -->
+<header class="p-6 border-b border-gray-700 flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-neon">FlyZen</h1>
+  <a href="flights.html" class="text-gray-400 hover:text-neon">← Back</a>
+</header>
+
+<!-- MAIN -->
+<section class="max-w-6xl mx-auto px-6 py-10">
+  <h2 class="text-3xl font-bold mb-2">Select Your Seat</h2>
+  <p class="text-gray-400 mb-8">Window seats include surge pricing</p>
+
+  <div class="grid md:grid-cols-3 gap-10">
+
+    <!-- SEAT MAP -->
+    <div class="md:col-span-2 bg-card p-6 rounded-xl">
+
+      <div class="text-center mb-6 text-neon font-semibold">✈ FlyZen Aircraft</div>
+
+      <h3 class="text-lg font-semibold mb-3">Business Class</h3>
+      <div id="businessSeats" class="mb-8"></div>
+
+      <h3 class="text-lg font-semibold mb-3">Economy Class</h3>
+      <div id="economySeats"></div>
+
+    </div>
+
+    <!-- PRICE SUMMARY -->
+    <div class="bg-card p-6 rounded-xl h-fit">
+      <h3 class="text-xl font-semibold mb-4">Fare Summary</h3>
+
+      <div class="space-y-2 text-gray-400">
+        <div class="flex justify-between">
+          <span>Base Fare</span>
+          <span id="baseFare">₹ 0</span>
+        </div>
+
+        <div class="flex justify-between">
+          <span>Seat Surcharge</span>
+          <span id="seatFare">₹ 0</span>
+        </div>
+
+        <hr class="border-gray-600">
+
+        <div class="flex justify-between text-lg font-bold text-text">
+          <span>Total</span>
+          <span id="totalFare">₹ 0</span>
+        </div>
+      </div>
+
+      <button
+        onclick="proceedToBooking()"
+        class="mt-6 w-full bg-neon text-black py-3 rounded-lg font-semibold hover:opacity-90"
+      >
+        Continue
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<!-- JS -->
+<script src="./assets/js/seats.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Payment</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen">
+
+<header class="p-6 border-b border-gray-700">
+  <h1 class="text-2xl font-bold text-neon">FlyZen</h1>
+</header>
+
+<section class="max-w-xl mx-auto px-6 py-12">
+
+  <h2 class="text-3xl font-bold mb-6">Payment</h2>
+
+  <div class="bg-card p-6 rounded-xl space-y-6">
+
+    <!-- Amount -->
+    <div class="flex justify-between text-lg">
+      <span>Total Amount</span>
+      <span class="font-bold text-neon" id="amount"></span>
+    </div>
+
+    <!-- Payment Method -->
+    <div>
+      <label class="text-gray-400 text-sm">Card Number</label>
+      <input placeholder="4242 4242 4242 4242"
+        class="w-full mt-1 p-3 rounded bg-bg border border-gray-600" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <input placeholder="MM / YY"
+        class="p-3 rounded bg-bg border border-gray-600" />
+      <input placeholder="CVV"
+        class="p-3 rounded bg-bg border border-gray-600" />
+    </div>
+
+    <button
+      onclick="payNow()"
+      class="w-full bg-neon text-black py-3 rounded-lg font-semibold hover:opacity-90"
+      id="payBtn"
+    >
+      Pay Now
+    </button>
+
+    <p id="status" class="text-center text-sm text-gray-400"></p>
+
+  </div>
+</section>
+
+<script src="./assets/js/payment.js"></script>
+</body>
+</html>

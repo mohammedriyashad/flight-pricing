@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Smart Flight Booking</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text">
+
+<nav class="absolute top-0 left-0 w-full flex justify-between items-center px-10 py-6 z-10">
+  <h1 class="text-2xl font-bold text-neon">FlyZen</h1>
+
+  <!-- AUTH BUTTONS -->
+  <div id="authButtons" class="space-x-6">
+    <a href="login.html" class="text-gray-300 hover:text-neon">Login</a>
+    <a href="signup.html" class="bg-neon text-black px-4 py-2 rounded-lg font-semibold">
+      Sign Up
+    </a>
+  </div>
+
+  <!-- USER DROPDOWN -->
+  <div id="userMenu" class="relative hidden">
+    <button
+      onclick="toggleUserMenu()"
+      class="flex items-center gap-2 text-gray-200 hover:text-neon"
+    >
+      <!-- USER ICON -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+
+      <span id="username"></span>
+    </button>
+
+    <!-- DROPDOWN -->
+    <div
+      id="dropdown"
+      class="absolute right-0 mt-3 w-40 bg-card rounded-lg shadow-lg hidden"
+    >
+      <button
+        onclick="logout()"
+        class="block w-full text-left px-4 py-3 text-red-400 hover:bg-bg rounded-lg"
+      >
+        Logout
+      </button>
+    </div>
+  </div>
+</nav>       
+<!-- HERO -->
+<section
+  class="min-h-screen flex flex-col justify-center items-center text-center relative"
+  style="background: linear-gradient(rgba(0,0,0,0.7), rgba(11,16,32,0.9)), url('./assets/images/hero.jpg') center/cover;"
+>
+
+  <h2 class="text-5xl md:text-6xl font-extrabold mb-4">
+    Fly Smarter. <span class="text-neon">Fly Zen.</span>
+  </h2>
+
+  <p class="text-gray-300 mb-10 max-w-xl">
+    AI-powered pricing · Smart seats · Instant booking
+  </p>
+
+  <!-- SEARCH CARD -->
+  <div class="bg-card/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl flex gap-4 flex-wrap justify-center">
+    <input id="from" placeholder="From (DEL)"
+      class="px-4 py-3 rounded-lg bg-bg border border-gray-600 text-white" />
+    <input id="to" placeholder="To (BLR)"
+      class="px-4 py-3 rounded-lg bg-bg border border-gray-600 text-white" />
+    <input type="date"
+      class="px-4 py-3 rounded-lg bg-bg border border-gray-600 text-white" />
+    <button onclick="searchFlights()"
+      class="bg-neon text-black px-6 py-3 rounded-lg font-bold hover:scale-105 transition">
+      Search
+    </button>
+  </div>
+
+</section>
+
+<script src="./assets/js/config.js"></script>
+<script src="./assets/js/search.js"></script>
+<script>
+  const userRaw = localStorage.getItem("flyzen_user");
+
+  if (userRaw) {
+    const user = JSON.parse(userRaw);
+    const name = user.email.split("@")[0];
+
+    document.getElementById("authButtons").classList.add("hidden");
+    document.getElementById("userMenu").classList.remove("hidden");
+    document.getElementById("username").innerText = name;
+  }
+
+  function toggleUserMenu() {
+    document.getElementById("dropdown").classList.toggle("hidden");
+  }
+
+  function logout() {
+    localStorage.removeItem("flyzen_user");
+    window.location.reload();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Available Flights</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen">
+
+<!-- HEADER -->
+<header class="p-6 border-b border-gray-700 flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-neon">FlyZen</h1>
+  <a href="index.html" class="text-gray-400 hover:text-neon">← Back</a>
+</header>
+
+<!-- RESULTS -->
+<section class="max-w-6xl mx-auto px-6 py-10">
+  <h2 class="text-3xl font-bold mb-6">Available Flights</h2>
+
+  <div id="flightResults" class="grid gap-6"></div>
+</section>
+
+<script src="./assets/js/config.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/flights.js"></script>
+</body>
+</html>

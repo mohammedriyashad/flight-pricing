@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Passenger Details</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#111A2E",
+            neon: "#00E5FF",
+            text: "#EAF2FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen">
+
+<header class="p-6 border-b border-gray-700 flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-neon">FlyZen</h1>
+</header>
+
+<section class="max-w-3xl mx-auto px-6 py-10">
+  <h2 class="text-3xl font-bold mb-6">Passenger Details</h2>
+
+  <div class="bg-card p-6 rounded-xl space-y-5">
+
+    <div>
+      <label class="text-gray-400 text-sm">Full Name</label>
+      <input id="name" class="w-full mt-1 p-3 rounded bg-bg border border-gray-600" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="text-gray-400 text-sm">Age</label>
+        <input id="age" type="number" class="w-full mt-1 p-3 rounded bg-bg border border-gray-600" />
+      </div>
+
+      <div>
+        <label class="text-gray-400 text-sm">Gender</label>
+        <select id="gender" class="w-full mt-1 p-3 rounded bg-bg border border-gray-600">
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label class="text-gray-400 text-sm">Email</label>
+      <input id="email" disabled class="w-full mt-1 p-3 rounded bg-bg border border-gray-600 opacity-70" />
+    </div>
+
+    <button
+      onclick="proceedToPayment()"
+      class="w-full bg-neon text-black py-3 rounded-lg font-semibold hover:opacity-90"
+    >
+      Proceed to Payment
+    </button>
+
+  </div>
+</section>
+
+<script src="./assets/js/booking.js"></script>
+</body>
+</html>

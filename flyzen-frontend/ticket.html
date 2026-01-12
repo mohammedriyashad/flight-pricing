@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlyZen — Boarding Pass</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0B1020",
+            card: "#2B1C4A",        /* Vistara purple */
+            gold: "#C9A24D",
+            neon: "#7C5CFF",
+            text: "#F5F3FF"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-bg text-text min-h-screen p-6">
+
+<!-- NAVBAR -->
+<nav class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold text-gold">FlyZen</h1>
+
+  <div class="flex items-center gap-4">
+    <span id="userBadge" class="text-sm text-gray-300"></span>
+    <button onclick="logout()" class="text-red-400 hover:underline">
+      Logout
+    </button>
+  </div>
+</nav>
+
+<!-- TICKET -->
+<div
+  id="ticket"
+  class="max-w-4xl mx-auto bg-card rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden"
+>
+
+  <!-- TOP STRIP -->
+  <div class="absolute top-0 left-0 w-full h-2 bg-gold"></div>
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center border-b border-white/20 pb-4 mb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gold">FlyZen</h1>
+      <p class="text-sm text-gray-300">Boarding Pass</p>
+    </div>
+    <div class="text-right">
+      <p class="text-xs text-gray-300">PNR</p>
+      <p id="pnr" class="font-bold text-lg tracking-widest">—</p>
+    </div>
+  </div>
+
+  <!-- FLIGHT INFO -->
+  <div class="grid grid-cols-4 gap-4 text-sm mb-6">
+    <div>
+      <p class="text-gray-300">From</p>
+      <p id="from" class="text-xl font-semibold">—</p>
+    </div>
+    <div>
+      <p class="text-gray-300">To</p>
+      <p id="to" class="text-xl font-semibold">—</p>
+    </div>
+    <div>
+      <p class="text-gray-300">Flight</p>
+      <p id="flight" class="font-semibold">—</p>
+    </div>
+    <div>
+      <p class="text-gray-300">Airline</p>
+      <p id="airline" class="font-semibold">—</p>
+    </div>
+  </div>
+
+  <!-- PASSENGERS -->
+  <div>
+    <p class="text-sm text-gray-300 mb-2">
+      Passengers (Name as per Govt ID)
+    </p>
+
+    <div id="passengers" class="space-y-2"></div>
+  </div>
+
+  <!-- BARCODE -->
+  <div class="mt-6 flex justify-center">
+    <div id="barcode" class="flex gap-1 h-12"></div>
+  </div>
+
+</div>
+
+<!-- ACTION -->
+<div class="flex justify-center mt-6">
+  <button
+    onclick="downloadTicket()"
+    class="bg-gold text-black px-6 py-3 rounded-lg font-semibold hover:opacity-90"
+  >
+    Download Ticket (PDF)
+  </button>
+</div>
+
+<!-- PDF LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+/* ---------------- LOAD DATA ---------------- */
+
+const booking = JSON.parse(localStorage.getItem("flyzen_booking"));
+const user = JSON.parse(localStorage.getItem("flyzen_user"));
+
+if (!booking || !user) {
+  alert("No booking found");
+  window.location.href = "index.html";
+}
+
+// BASIC INFO
+document.getElementById("pnr").innerText = booking.pnr || "FZXXXXXX";
+document.getElementById("from").innerText = booking.origin || "DEL";
+document.getElementById("to").innerText = booking.destination || "BLR";
+document.getElementById("flight").innerText = booking.flight_number || "UK-202";
+document.getElementById("airline").innerText = booking.airline || "Vistara (FlyZen)";
+
+// USER
+document.getElementById("userBadge").innerText =
+  user.email.split("@")[0];
+
+// PASSENGERS + SEATS
+const container = document.getElementById("passengers");
+container.innerHTML = "";
+
+const seatLetters = ["A", "B", "C", "D", "E", "F"];
+
+booking.passengers.forEach((p, i) => {
+  const seat = p.seat || `${12 + i}${seatLetters[i % 6]}`;
+
+  container.innerHTML += `
+    <div class="flex justify-between bg-white/10 rounded-lg px-4 py-3">
+      <div>
+        <p class="font-semibold">${p.name}</p>
+        <p class="text-xs text-gray-300">Passenger ${i + 1}</p>
+      </div>
+      <div class="text-right text-sm">
+        ${p.gender}, ${p.age} yrs<br>
+        <span class="text-gold font-semibold">Seat ${seat}</span>
+      </div>
+    </div>
+  `;
+});
+
+// BARCODE (PNR BASED)
+const barcode = document.getElementById("barcode");
+const code = (booking.pnr || "FLYZEN123").split("");
+
+code.forEach(char => {
+  const bar = document.createElement("div");
+  bar.style.width = Math.random() > 0.5 ? "4px" : "2px";
+  bar.style.background = "#FFFFFF";
+  barcode.appendChild(bar);
+});
+
+/* ---------------- PDF ---------------- */
+
+async function downloadTicket() {
+  const ticket = document.getElementById("ticket");
+
+  const canvas = await html2canvas(ticket, {
+    scale: 2,
+    backgroundColor: "#0B1020"
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const { jsPDF } = window.jspdf;
+
+  const pdf = new jsPDF("p", "mm", "a4");
+  const width = pdf.internal.pageSize.getWidth();
+  const height = (canvas.height * width) / canvas.width;
+
+  pdf.addImage(imgData, "PNG", 0, 10, width, height);
+  pdf.save("FlyZen_Boarding_Pass.pdf");
+}
+
+/* ---------------- LOGOUT ---------------- */
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
