@@ -5,8 +5,9 @@ from typing import List, Optional
 import sqlite3, random, string
 from pathlib import Path
 from datetime import datetime
+from tools.create_db_run import create_tables, seed_flights 
 
-APP = FastAPI(title="SkyBook Backend")
+APP = FastAPI(title="Flyzen Backend")
 
 APP.add_middleware(
     CORSMiddleware,
@@ -28,10 +29,10 @@ def normalize_email(v: str):
     return v.strip().lower()
 
 # ---------- MODELS ----------
-class Signup(BaseModel):
-    name: str
+class SignupOTP(BaseModel):
     email: str
     password: str
+    otp: str
 
 class Login(BaseModel):
     email: str
@@ -72,21 +73,47 @@ def row_to_flight(row: sqlite3.Row) -> FlightOut:
         price=row["base_price"]
     )
 
-# ---------- AUTH ----------
 @APP.post("/users/signup")
-def signup(data: Signup):
+def signup(data: SignupOTP):
+    email = data.email.strip().lower()
+
     conn = get_conn()
+    cur = conn.cursor()
+
+    # 1. Get OTP
+    cur.execute(
+        "SELECT otp, expires_at FROM otp_logins WHERE email=?",
+        (email,)
+    )
+    row = cur.fetchone()
+
+    if not row:
+        raise HTTPException(400, "OTP not found")
+
+    saved_otp, expires_at = row
+
+    if int(time.time()) > int(expires_at):
+        raise HTTPException(400, "OTP expired")
+
+    if str(saved_otp) != str(data.otp):
+        raise HTTPException(400, "Invalid OTP")
+
+    # 2. Create user
     try:
-        conn.execute(
-            "INSERT INTO users (name,email,password) VALUES (?,?,?)",
-            (data.name, data.email.lower(), data.password)
+        cur.execute(
+            "INSERT INTO users (email, password) VALUES (?, ?)",
+            (email, data.password)
         )
-        conn.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(400, "User already exists")
-    finally:
-        conn.close()
-    return {"message": "Signup successful"}
+
+    # 3. Delete OTP
+    cur.execute("DELETE FROM otp_logins WHERE email=?", (email,))
+
+    conn.commit()
+    conn.close()
+
+    return {"message": "Account created successfully"}
 
 @APP.post("/users/login")
 def login(data: Login):
@@ -120,7 +147,7 @@ def get_flights(
         arrival_time,
         available_seats,
         base_price
-    FROM flight
+    FROM flights
     WHERE 1=1
     """
     params = []
@@ -162,7 +189,7 @@ def book_flight(data: BookingIn):
     conn = get_conn()
 
     flight = conn.execute(
-        "SELECT * FROM flight WHERE flight_id=?",
+        "SELECT * FROM flights WHERE flight_id=?",
         (data.flight_id,)
     ).fetchone()
 
@@ -184,7 +211,7 @@ def book_flight(data: BookingIn):
     """, (pnr, data.user_email, data.flight_id, data.seats, total))
 
     conn.execute("""
-        UPDATE flight
+        UPDATE flights
         SET available_seats = available_seats - ?
         WHERE flight_id = ?
     """, (data.seats, data.flight_id))
@@ -236,6 +263,55 @@ def cancel_booking(booking_id: str):
     conn.commit()
     conn.close()
     return {"message": "Booking cancelled"}
+
+import random, time
+
+@APP.post("/users/send-otp")
+def send_otp(email: str):
+    email = email.strip().lower()
+    otp = str(random.randint(100000, 999999))
+    expires = int(time.time()) + 300
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT OR REPLACE INTO otp_logins (email, otp, expires_at)
+        VALUES (?, ?, ?)
+    """, (email, otp, expires))
+
+    conn.commit()
+    conn.close()
+
+    print(f"OTP for {email}: {otp}")  # TEMP
+
+    return {"message": "OTP sent"}
+
+@APP.post("/users/verify-otp")
+def verify_otp(email: str, otp: str):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT otp, expires_at FROM otp_logins WHERE email=?", (email,))
+    row = cur.fetchone()
+
+    if not row:
+        return {"error": "OTP not found"}
+
+    saved_otp, expires_at = row
+
+    if int(time.time()) > expires_at:
+        return {"error": "OTP expired"}
+
+    if otp != saved_otp:
+        return {"error": "Invalid OTP"}
+
+    return {"message": "Login successful", "email": email}
+
+@APP.on_event("startup")
+def startup_event():
+    create_tables()
+    seed_flights()
 
 from .admin import router as admin_router
 APP.include_router(admin_router)
