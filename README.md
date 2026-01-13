@@ -6,7 +6,7 @@ The project is built to simulate a real-world airline booking workflow using mod
 ---
 
 ## 🚀 Live Demo
-- **Frontend:** https://<your-netlify-url>.netlify.app  
+- **Frontend: https://flyzen.netlify.app 
 - **Backend API: https://flyzen-backend.onrender.com
 - **API Docs (Swagger): https://flyzen-backend.onrender.com/docs
 
@@ -31,11 +31,6 @@ The project is built to simulate a real-world airline booking workflow using mod
 ---
 
 ## 🏗️ Project Architecture
-
----
-
----
-
 
 ###  Clean Project structure
 
